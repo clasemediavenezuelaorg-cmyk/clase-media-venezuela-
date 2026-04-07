@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, User, Phone, Lock, Loader2, LogIn, UserPlus } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { X, User, Phone, Lock, Loader2, LogIn, UserPlus, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { supabase, checkSupabaseConnection } from "../lib/supabase";
 import { cn } from "@/src/lib/utils";
 
 interface AuthModalProps {
@@ -17,6 +17,18 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "error">("checking");
+
+  useEffect(() => {
+    if (isOpen) {
+      const check = async () => {
+        const result = await checkSupabaseConnection();
+        setConnectionStatus(result === true ? "connected" : "error");
+      };
+      check();
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +70,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
         }
       } else {
         const email = `${phone}@cm.app`;
+        console.log("Intentando entrar con:", email);
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -72,7 +85,9 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
       let errorMessage = error.message || "Error en la autenticación";
       
       if (errorMessage.includes("Invalid login credentials")) {
-        errorMessage = "Credenciales inválidas. ¿Ya te registraste? Si es tu primera vez, usa la opción 'Regístrate' abajo. 🔑";
+        errorMessage = "Credenciales inválidas. ¿Ya te registraste en ESTA base de datos? Si es tu primera vez, usa la pestaña 'REGISTRARME' arriba. 🔑";
+      } else if (errorMessage.includes("Email rate limit exceeded") || errorMessage.includes("email rate limit exceeded")) {
+        errorMessage = "Has intentado demasiadas veces en poco tiempo. Por seguridad, por favor espera 2 o 3 minutos antes de intentar de nuevo. ⏳🛡️";
       } else if (errorMessage.includes("Failed to fetch")) {
         errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a internet y la configuración de Supabase en 'Settings > Secrets'. 🌐🔌";
       }
@@ -105,9 +120,28 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 <div className="rounded-full bg-brand-blue/10 p-2 text-brand-blue">
                   {mode === "login" ? <LogIn className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
                 </div>
-                <h3 className="text-xl font-bold text-brand-blue">
-                  {mode === "login" ? "Iniciar Sesión" : "Registro Ciudadano"}
-                </h3>
+                <div>
+                  <h3 className="text-xl font-bold text-brand-blue leading-none">
+                    {mode === "login" ? "Iniciar Sesión" : "Registro Ciudadano"}
+                  </h3>
+                  <div className="mt-1 flex items-center gap-1">
+                    {connectionStatus === "checking" && (
+                      <span className="flex items-center gap-1 text-[8px] font-bold text-brand-slate uppercase tracking-widest">
+                        <Loader2 className="h-2 w-2 animate-spin" /> Verificando conexión...
+                      </span>
+                    )}
+                    {connectionStatus === "connected" && (
+                      <span className="flex items-center gap-1 text-[8px] font-bold text-green-600 uppercase tracking-widest">
+                        <CheckCircle2 className="h-2 w-2" /> Base de datos conectada
+                      </span>
+                    )}
+                    {connectionStatus === "error" && (
+                      <span className="flex items-center gap-1 text-[8px] font-bold text-brand-red uppercase tracking-widest">
+                        <AlertCircle className="h-2 w-2" /> Error de configuración
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
               <button onClick={onClose} className="rounded-full p-2 hover:bg-brand-bone transition-colors">
                 <X className="h-5 w-5 text-brand-slate" />
@@ -127,11 +161,16 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
               <button 
                 onClick={() => setMode("register")}
                 className={cn(
-                  "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
+                  "relative flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
                   mode === "register" ? "bg-brand-blue text-white" : "bg-white text-brand-slate hover:bg-brand-bone"
                 )}
               >
                 Registrarme
+                {mode === "login" && (
+                  <span className="absolute -right-1 top-1 flex h-4 items-center rounded-full bg-brand-red px-1.5 text-[8px] font-black text-white shadow-lg animate-pulse">
+                    NUEVO
+                  </span>
+                )}
               </button>
             </div>
 
@@ -173,6 +212,9 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                     required
                   />
                 </div>
+                <p className="text-[8px] text-brand-slate/40 px-2 italic">
+                  * Usa el mismo formato que usaste al registrarte.
+                </p>
               </div>
 
               <div className="space-y-1">
@@ -180,13 +222,20 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-slate/40" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-3 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none"
+                    className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-3 pl-12 pr-12 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-slate/40 hover:text-brand-blue transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -196,11 +245,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-slate/40" />
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-3 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none"
+                      className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-3 pl-12 pr-12 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none"
                       required
                     />
                   </div>
@@ -217,7 +266,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 )}
               </button>
 
-              <div className="pt-2 text-center">
+              <div className="pt-2 text-center space-y-2">
                 <button
                   type="button"
                   onClick={() => setMode(mode === "login" ? "register" : "login")}
@@ -225,6 +274,12 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 >
                   {mode === "login" ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
                 </button>
+                
+                <div className="pt-2 border-t border-brand-gold/5">
+                  <p className="text-[8px] text-brand-slate/40 font-mono">
+                    PROYECTO: {supabase.auth.onAuthStateChange.name ? 'tygwqsyzudinvtayscpj' : 'Cargando...'}
+                  </p>
+                </div>
               </div>
             </form>
           </motion.div>
