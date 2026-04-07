@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Send, Loader2, FileText, AlignLeft, Tag } from "lucide-react";
+import { X, Send, Loader2, FileText, AlignLeft, Youtube } from "lucide-react";
+import { getYoutubeThumbnail } from "../services/imgbbService";
+import { supabase } from "../lib/supabase";
 
 interface ProposalFormProps {
   isOpen: boolean;
@@ -10,20 +12,48 @@ interface ProposalFormProps {
 export function ProposalForm({ isOpen, onClose }: ProposalFormProps) {
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [thumbnail, setThumbnail] = useState("");
 
   const categories = [
     "Economía", "Educación", "Infraestructura", "Salud", "Leyes", "Tecnología"
   ];
 
+  const handleVideoUrlChange = (url: string) => {
+    setVideoUrl(url);
+    const thumb = getYoutubeThumbnail(url);
+    if (thumb) {
+      setThumbnail(thumb);
+    } else {
+      setThumbnail("");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category) return;
+    if (!category || !title || !description) return;
     
     setLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setLoading(false);
-    onClose();
+    try {
+      const { error } = await supabase.from('proposals').insert({
+        title,
+        description,
+        category,
+        video_url: videoUrl,
+        video_thumbnail: thumbnail,
+        status: 'under-review'
+      });
+
+      if (error) throw error;
+      onClose();
+    } catch (error) {
+      console.error("Error saving proposal to Supabase:", error);
+      alert("Error al enviar la propuesta. Verifica tu configuración de Supabase.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,6 +93,8 @@ export function ProposalForm({ isOpen, onClose }: ProposalFormProps) {
                   <input
                     type="text"
                     placeholder="Ej: Reforma de la Ley de Propiedad Horizontal"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                     required
                   />
@@ -95,6 +127,8 @@ export function ProposalForm({ isOpen, onClose }: ProposalFormProps) {
                   <AlignLeft className="absolute left-4 top-4 h-4 w-4 text-brand-slate/40" />
                   <textarea
                     placeholder="Explica el problema y tu solución técnica..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     className="min-h-[120px] w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                     required
                   />
@@ -102,15 +136,23 @@ export function ProposalForm({ isOpen, onClose }: ProposalFormProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-brand-blue/60">Etiquetas (Opcional)</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-brand-blue/60">Video Explicativo (YouTube)</label>
                 <div className="relative">
-                  <Tag className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-slate/40" />
+                  <Youtube className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-slate/40" />
                   <input
-                    type="text"
-                    placeholder="Ej: legal, servicios, reforma..."
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={videoUrl}
+                    onChange={(e) => handleVideoUrlChange(e.target.value)}
                     className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                   />
                 </div>
+                {thumbnail && (
+                  <div className="mt-2 flex items-center gap-3 rounded-xl bg-brand-bone p-2 border border-brand-gold/10">
+                    <img src={thumbnail} alt="Thumbnail" className="h-12 w-20 rounded-lg object-cover" referrerPolicy="no-referrer" />
+                    <span className="text-[10px] font-bold text-brand-blue">Miniatura detectada</span>
+                  </div>
+                )}
               </div>
 
               <button

@@ -87,6 +87,7 @@ export function KnowledgeExchangeModule() {
         isOpen={isApplicationFormOpen} 
         onClose={() => { setIsApplicationFormOpen(false); setSelectedNeed(null); }} 
         needTitle={selectedNeed?.title || ""} 
+        needId={selectedNeed?.id.toString() || ""} 
       />
       {/* Header */}
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">

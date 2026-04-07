@@ -1,22 +1,41 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Send, Loader2, UserCheck, MessageSquare, Briefcase } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 interface ApplicationFormProps {
   isOpen: boolean;
   onClose: () => void;
   needTitle: string;
+  needId: string; // Added needId prop
 }
 
-export function ApplicationForm({ isOpen, onClose, needTitle }: ApplicationFormProps) {
+export function ApplicationForm({ isOpen, onClose, needTitle, needId }: ApplicationFormProps) {
   const [loading, setLoading] = useState(false);
+  const [motivation, setMotivation] = useState("");
+  const [skills, setSkills] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!motivation || !skills) return;
+
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setLoading(false);
-    onClose();
+    try {
+      const { error } = await supabase.from('applications').insert({
+        need_id: needId,
+        motivation,
+        skills_offered: skills,
+        status: 'pending'
+      });
+
+      if (error) throw error;
+      onClose();
+    } catch (error) {
+      console.error("Error saving application to Supabase:", error);
+      alert("Error al enviar la postulación. Verifica tu configuración de Supabase.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,6 +74,8 @@ export function ApplicationForm({ isOpen, onClose, needTitle }: ApplicationFormP
                   <MessageSquare className="absolute left-4 top-4 h-4 w-4 text-brand-slate/40" />
                   <textarea
                     placeholder="Describe tu experiencia relevante para esta necesidad..."
+                    value={motivation}
+                    onChange={(e) => setMotivation(e.target.value)}
                     className="min-h-[120px] w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                     required
                   />
@@ -68,6 +89,8 @@ export function ApplicationForm({ isOpen, onClose, needTitle }: ApplicationFormP
                   <input
                     type="text"
                     placeholder="Ej: Redacción legal, Auditoría..."
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
                     className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                     required
                   />

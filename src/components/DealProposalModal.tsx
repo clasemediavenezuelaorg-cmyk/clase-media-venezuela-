@@ -1,22 +1,41 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Send, Loader2, Handshake, MessageSquare, Repeat } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 interface DealProposalModalProps {
   isOpen: boolean;
   onClose: () => void;
   memberName: string;
+  memberId: string; // Added memberId prop
 }
 
-export function DealProposalModal({ isOpen, onClose, memberName }: DealProposalModalProps) {
+export function DealProposalModal({ isOpen, onClose, memberName, memberId }: DealProposalModalProps) {
   const [loading, setLoading] = useState(false);
+  const [proposal, setProposal] = useState("");
+  const [exchange, setExchange] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!proposal || !exchange) return;
+
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setLoading(false);
-    onClose();
+    try {
+      const { error } = await supabase.from('deals').insert({
+        receiver_id: memberId,
+        proposal_text: proposal,
+        exchange_text: exchange,
+        status: 'pending'
+      });
+
+      if (error) throw error;
+      onClose();
+    } catch (error) {
+      console.error("Error saving deal to Supabase:", error);
+      alert("Error al enviar la propuesta de trato. Verifica tu configuración de Supabase.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,6 +74,8 @@ export function DealProposalModal({ isOpen, onClose, memberName }: DealProposalM
                   <MessageSquare className="absolute left-4 top-4 h-4 w-4 text-brand-slate/40" />
                   <textarea
                     placeholder={`Hola ${memberName}, me interesa tu servicio. Te propongo...`}
+                    value={proposal}
+                    onChange={(e) => setProposal(e.target.value)}
                     className="min-h-[120px] w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                     required
                   />
@@ -68,6 +89,8 @@ export function DealProposalModal({ isOpen, onClose, memberName }: DealProposalM
                   <input
                     type="text"
                     placeholder="Ej: 2 horas de asesoría legal..."
+                    value={exchange}
+                    onChange={(e) => setExchange(e.target.value)}
                     className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                     required
                   />

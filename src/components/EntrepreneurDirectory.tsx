@@ -69,6 +69,7 @@ export function EntrepreneurDirectory() {
         isOpen={isDealModalOpen} 
         onClose={() => { setIsDealModalOpen(false); setSelectedMember(null); }} 
         memberName={selectedMember?.name || ""} 
+        memberId={selectedMember?.id.toString() || ""} 
       />
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>

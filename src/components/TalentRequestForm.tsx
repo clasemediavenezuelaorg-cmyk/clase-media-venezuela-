@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Send, Loader2, Users, Target, ListChecks } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 interface TalentRequestFormProps {
   isOpen: boolean;
@@ -11,6 +12,8 @@ export function TalentRequestForm({ isOpen, onClose }: TalentRequestFormProps) {
   const [loading, setLoading] = useState(false);
   const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleAddSkill = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && newSkill.trim()) {
@@ -28,10 +31,25 @@ export function TalentRequestForm({ isOpen, onClose }: TalentRequestFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title || !description || skills.length === 0) return;
+
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setLoading(false);
-    onClose();
+    try {
+      const { error } = await supabase.from('talent_needs').insert({
+        title,
+        description,
+        required_skills: skills,
+        status: 'open'
+      });
+
+      if (error) throw error;
+      onClose();
+    } catch (error) {
+      console.error("Error saving talent need to Supabase:", error);
+      alert("Error al publicar la solicitud. Verifica tu configuración de Supabase.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,6 +89,8 @@ export function TalentRequestForm({ isOpen, onClose }: TalentRequestFormProps) {
                   <input
                     type="text"
                     placeholder="Ej: Asesoría Contable para PYME"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                     required
                   />
@@ -81,6 +101,8 @@ export function TalentRequestForm({ isOpen, onClose }: TalentRequestFormProps) {
                 <label className="text-xs font-bold uppercase tracking-wider text-brand-blue/60">Descripción del Proyecto</label>
                 <textarea
                   placeholder="Explica qué necesitas y cuál es el objetivo..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   className="min-h-[100px] w-full rounded-2xl border border-brand-gold/20 bg-brand-bone p-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                   required
                 />
