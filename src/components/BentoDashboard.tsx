@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { 
   Users, 
@@ -11,12 +11,15 @@ import {
   User,
   Search,
   ChevronRight,
-  Shield
+  Shield,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { CircularProgress } from "./CircularProgress";
 import { YouTubeModal } from "./YouTubeModal";
 import { useAuth } from "../context/AuthContext";
+import { checkSupabaseConnection } from "../lib/supabase";
+import { useSettings } from "../hooks/useSettings";
 
 interface BentoDashboardProps {
   onNavigate: (view: "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile" | "admin") => void;
@@ -24,18 +27,34 @@ interface BentoDashboardProps {
 
 export function BentoDashboard({ onNavigate }: BentoDashboardProps) {
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const { user, profile } = useAuth();
+  const { settings } = useSettings();
   const newsVideoId = "dQw4w9WgXcQ"; // Placeholder video ID
   const newsTitle = "Avances en la Mesa Técnica de Economía: Nuevas Propuestas para la Comunidad";
+
+  useEffect(() => {
+    const verifyConnection = async () => {
+      const result = await checkSupabaseConnection();
+      if (typeof result === 'object' && result.error) {
+        setConnectionError(result.error);
+      }
+    };
+    verifyConnection();
+  }, []);
 
   return (
     <div className="flex h-screen w-full flex-col bg-brand-bone p-4 overflow-hidden lg:p-8">
       {/* Header Compacto (15%) */}
       <header className="flex h-[15%] items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-blue text-white shadow-lg shadow-brand-blue/20">
-            <span className="text-xl font-black">CM</span>
-          </div>
+          {settings.logo_url ? (
+            <img src={settings.logo_url} alt="Logo" className="h-12 w-12 object-contain" referrerPolicy="no-referrer" />
+          ) : (
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-blue text-white shadow-lg shadow-brand-blue/20">
+              <span className="text-xl font-black">{settings.app_name.charAt(0)}</span>
+            </div>
+          )}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/60">Bienvenido,</p>
             <p className="text-lg font-black text-brand-blue leading-none">{profile?.name || "Ciudadano"}</p>
@@ -65,6 +84,17 @@ export function BentoDashboard({ onNavigate }: BentoDashboardProps) {
           </button>
         </div>
       </header>
+
+      {connectionError && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 flex items-center gap-3 rounded-2xl bg-brand-red/10 p-4 text-brand-red border border-brand-red/20 shrink-0"
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <p className="text-xs font-bold">{connectionError}</p>
+        </motion.div>
+      )}
 
       {/* Bento Grid (75%) */}
       <div className="grid flex-grow grid-cols-2 grid-rows-4 gap-3 md:grid-cols-3 md:grid-rows-3">

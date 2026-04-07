@@ -1,26 +1,30 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Send, Loader2, UserCheck, MessageSquare, Briefcase } from "lucide-react";
+import { X, Send, Loader2, UserCheck, MessageSquare, Briefcase, Phone } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
 interface ApplicationFormProps {
   isOpen: boolean;
   onClose: () => void;
   needTitle: string;
-  needId: string; // Added needId prop
+  needId: string;
 }
 
 export function ApplicationForm({ isOpen, onClose, needTitle, needId }: ApplicationFormProps) {
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [motivation, setMotivation] = useState("");
   const [skills, setSkills] = useState("");
+  const [phone, setPhone] = useState(profile?.phone || "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!motivation || !skills) return;
+    if (!motivation || !skills || !phone) return;
 
     setLoading(true);
     try {
+      // Save to DB for tracking
       const { error } = await supabase.from('applications').insert({
         need_id: needId,
         motivation,
@@ -29,10 +33,16 @@ export function ApplicationForm({ isOpen, onClose, needTitle, needId }: Applicat
       });
 
       if (error) throw error;
+
+      // Send WhatsApp message
+      const message = `🤝 *Nueva Postulación: ${needTitle}*\n\n👤 *Nombre:* ${profile?.name || 'Ciudadano'}\n📞 *Teléfono:* ${phone}\n💡 *Motivación:* ${motivation}\n🛠️ *Habilidades:* ${skills}\n\n¡Espero podamos colaborar! ✨🇻🇪`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+
       onClose();
-    } catch (error) {
-      console.error("Error saving application to Supabase:", error);
-      alert("Error al enviar la postulación. Verifica tu configuración de Supabase.");
+    } catch (error: any) {
+      console.error("Error saving application:", error);
+      alert(error.message || "Error al enviar la postulación. Verifica tu conexión.");
     } finally {
       setLoading(false);
     }
@@ -69,6 +79,21 @@ export function ApplicationForm({ isOpen, onClose, needTitle, needId }: Applicat
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-brand-blue/60">Tu Teléfono de Contacto</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-slate/40" />
+                  <input
+                    type="tel"
+                    placeholder="Ej: 04121234567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full rounded-2xl border border-brand-gold/20 bg-brand-bone py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-brand-blue/60">¿Por qué eres el candidato ideal?</label>
                 <div className="relative">
                   <MessageSquare className="absolute left-4 top-4 h-4 w-4 text-brand-slate/40" />
@@ -99,7 +124,7 @@ export function ApplicationForm({ isOpen, onClose, needTitle, needId }: Applicat
 
               <div className="rounded-2xl bg-brand-gold/5 p-4 border border-brand-gold/10">
                 <p className="text-[10px] font-medium text-brand-slate leading-relaxed">
-                  Tu postulación será revisada por el solicitante. Si eres seleccionado, recibirás una notificación para iniciar la colaboración.
+                  Tu postulación será enviada por WhatsApp y guardada en el sistema para seguimiento. 🚀
                 </p>
               </div>
 
@@ -108,7 +133,7 @@ export function ApplicationForm({ isOpen, onClose, needTitle, needId }: Applicat
                 disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-red py-4 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 disabled:opacity-50 active:scale-95"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Send className="h-5 w-5" /> Enviar Postulación</>}
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Send className="h-5 w-5" /> Enviar por WhatsApp</>}
               </button>
             </form>
           </motion.div>

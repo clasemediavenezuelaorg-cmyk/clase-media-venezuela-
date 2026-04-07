@@ -68,7 +68,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
       onClose();
     } catch (error: any) {
       console.error("Auth error:", error);
-      alert(error.message || "Error en la autenticación");
+      let errorMessage = error.message || "Error en la autenticación";
+      if (errorMessage.includes("Failed to fetch")) {
+        errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a internet y la configuración de Supabase en 'Settings > Secrets'. 🌐🔌";
+      }
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,11 @@
 import { Bell, User, Search, Menu } from "lucide-react";
+import { useSettings } from "../hooks/useSettings";
+import { useAuth } from "../context/AuthContext";
 
 export function Header() {
+  const { settings } = useSettings();
+  const { profile } = useAuth();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-brand-gold/10 bg-white/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -8,9 +13,18 @@ export function Header() {
           <button className="rounded-full p-2 hover:bg-brand-bone lg:hidden">
             <Menu className="h-5 w-5 text-brand-slate" />
           </button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold tracking-tight text-brand-blue">Clase Media</h1>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-gold">Gestión Comunitaria</p>
+          <div className="flex items-center gap-3">
+            {settings.logo_url ? (
+              <img src={settings.logo_url} alt="Logo" className="h-10 w-10 object-contain" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-blue text-white font-black">
+                {settings.app_name.charAt(0)}
+              </div>
+            )}
+            <div className="flex flex-col">
+              <h1 className="text-sm font-black tracking-tight text-brand-blue leading-none">{settings.app_name}</h1>
+              <p className="text-[8px] font-black uppercase tracking-widest text-brand-gold">Gestión Comunitaria</p>
+            </div>
           </div>
         </div>
 
@@ -31,11 +45,11 @@ export function Header() {
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-red ring-2 ring-white"></span>
           </button>
           <button className="flex items-center gap-2 rounded-full border border-brand-gold/20 p-1 pr-3 hover:bg-brand-bone">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gold/10 text-brand-gold">
-              <User className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gold/10 text-brand-gold font-black">
+              {profile?.name.charAt(0) || <User className="h-5 w-5" />}
             </div>
             <div className="hidden flex-col items-start text-left lg:flex">
-              <span className="text-xs font-bold text-brand-blue">Hola, Vecino</span>
+              <span className="text-xs font-bold text-brand-blue">Hola, {profile?.name.split(' ')[0] || 'Vecino'}</span>
               <span className="text-[10px] font-medium text-brand-slate">Mi Perfil</span>
             </div>
           </button>
