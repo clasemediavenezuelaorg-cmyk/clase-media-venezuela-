@@ -2,12 +2,15 @@
 CREATE TABLE profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
+  phone TEXT,
   profession TEXT,
   skills TEXT[],
   points INTEGER DEFAULT 0,
   medals TEXT[],
   is_verified BOOLEAN DEFAULT FALSE,
   avatar_url TEXT,
+  role TEXT DEFAULT 'user', -- 'user', 'admin', 'super_admin'
+  department TEXT, -- 'economy', 'education', etc.
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -95,3 +98,15 @@ VALUES
 INSERT INTO service_offers (user_id, profession, offer_description, need_description, rating, is_verified)
 SELECT id, 'Contador Público', 'Asesoría contable y tributaria', 'Diseño de logo para mi firma', 4.9, TRUE 
 FROM profiles WHERE name = 'Carlos Ruiz';
+
+-- Table for application settings
+CREATE TABLE app_settings (
+  id TEXT PRIMARY KEY DEFAULT 'global',
+  logo_url TEXT,
+  app_name TEXT DEFAULT 'Clase Media Venezuela',
+  primary_color TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Insert default settings
+INSERT INTO app_settings (id, app_name) VALUES ('global', 'Clase Media Venezuela') ON CONFLICT DO NOTHING;

@@ -10,25 +10,43 @@ import { ThinkTankModule } from "./components/ThinkTankModule";
 import { KnowledgeExchangeModule } from "./components/KnowledgeExchangeModule";
 import { ChatModule } from "./components/ChatModule";
 import { EntrepreneurDirectory } from "./components/EntrepreneurDirectory";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthModal } from "./components/AuthModal";
+import { AdminPanel } from "./components/AdminPanel";
+import { ProfileView } from "./components/ProfileView";
 import { 
   Home, 
   Brain, 
   Users, 
   MessageSquare, 
   Handshake,
-  User
+  User,
+  Shield
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 
-type View = "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile";
+type View = "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile" | "admin";
 
-export default function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState<View>("home");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { user, profile } = useAuth();
+
+  const handleNavigate = (view: View) => {
+    if (view === "chat" && !user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    if (view === "admin" && profile?.role !== 'super_admin') {
+      return;
+    }
+    setCurrentView(view);
+  };
 
   const renderView = () => {
     switch (currentView) {
       case "home":
-        return <BentoDashboard onNavigate={setCurrentView} />;
+        return <BentoDashboard onNavigate={handleNavigate} />;
       case "think-tank":
         return <ThinkTankModule />;
       case "exchange":
@@ -48,11 +66,17 @@ export default function App() {
       case "profile":
         return (
           <div className="container mx-auto px-4 py-8">
-            <KnowledgeExchangeModule /> {/* Reusing for profile tab */}
+            <ProfileView onNavigate={handleNavigate} />
+          </div>
+        );
+      case "admin":
+        return (
+          <div className="container mx-auto px-4 py-8">
+            <AdminPanel />
           </div>
         );
       default:
-        return <BentoDashboard onNavigate={setCurrentView} />;
+        return <BentoDashboard onNavigate={handleNavigate} />;
     }
   };
 
@@ -76,28 +100,28 @@ export default function App() {
         currentView === "home" ? "bg-white/40 border-white/20" : "bg-white/80"
       )}>
         <button 
-          onClick={() => setCurrentView("home")}
+          onClick={() => handleNavigate("home")}
           className={cn("flex flex-col items-center gap-1 transition-all", currentView === "home" ? "text-brand-blue scale-110" : "text-brand-slate")}
         >
           <Home className="h-5 w-5" />
           <span className="text-[10px] font-bold">Inicio</span>
         </button>
         <button 
-          onClick={() => setCurrentView("think-tank")}
+          onClick={() => handleNavigate("think-tank")}
           className={cn("flex flex-col items-center gap-1 transition-all", currentView === "think-tank" ? "text-brand-blue scale-110" : "text-brand-slate")}
         >
           <Brain className="h-5 w-5" />
           <span className="text-[10px] font-bold">Ideas</span>
         </button>
         <button 
-          onClick={() => setCurrentView("exchange")}
+          onClick={() => handleNavigate("exchange")}
           className={cn("flex flex-col items-center gap-1 transition-all", currentView === "exchange" ? "text-brand-blue scale-110" : "text-brand-slate")}
         >
           <Users className="h-5 w-5" />
           <span className="text-[10px] font-bold">Talento</span>
         </button>
         <button 
-          onClick={() => setCurrentView("chat")}
+          onClick={() => handleNavigate("chat")}
           className={cn("relative flex flex-col items-center gap-1 transition-all", currentView === "chat" ? "text-brand-blue scale-110" : "text-brand-slate")}
         >
           <MessageSquare className="h-5 w-5" />
@@ -106,15 +130,36 @@ export default function App() {
             3
           </span>
         </button>
-        <button 
-          onClick={() => setCurrentView("directory")}
-          className={cn("flex flex-col items-center gap-1 transition-all", currentView === "directory" ? "text-brand-blue scale-110" : "text-brand-slate")}
-        >
-          <Handshake className="h-5 w-5" />
-          <span className="text-[10px] font-bold">Apoyo</span>
-        </button>
+        
+        {profile?.role === 'super_admin' ? (
+          <button 
+            onClick={() => handleNavigate("admin")}
+            className={cn("flex flex-col items-center gap-1 transition-all", currentView === "admin" ? "text-brand-blue scale-110" : "text-brand-slate")}
+          >
+            <Shield className="h-5 w-5" />
+            <span className="text-[10px] font-bold">Admin</span>
+          </button>
+        ) : (
+          <button 
+            onClick={() => handleNavigate("directory")}
+            className={cn("flex flex-col items-center gap-1 transition-all", currentView === "directory" ? "text-brand-blue scale-110" : "text-brand-slate")}
+          >
+            <Handshake className="h-5 w-5" />
+            <span className="text-[10px] font-bold">Apoyo</span>
+          </button>
+        )}
       </nav>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

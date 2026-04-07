@@ -10,18 +10,21 @@ import {
   TrendingUp,
   User,
   Search,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { CircularProgress } from "./CircularProgress";
 import { YouTubeModal } from "./YouTubeModal";
+import { useAuth } from "../context/AuthContext";
 
 interface BentoDashboardProps {
-  onNavigate: (view: "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile") => void;
+  onNavigate: (view: "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile" | "admin") => void;
 }
 
 export function BentoDashboard({ onNavigate }: BentoDashboardProps) {
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
+  const { user, profile } = useAuth();
   const newsVideoId = "dQw4w9WgXcQ"; // Placeholder video ID
   const newsTitle = "Avances en la Mesa Técnica de Economía: Nuevas Propuestas para la Comunidad";
 
@@ -35,10 +38,18 @@ export function BentoDashboard({ onNavigate }: BentoDashboardProps) {
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/60">Bienvenido,</p>
-            <p className="text-lg font-black text-brand-blue leading-none">Ciudadano</p>
+            <p className="text-lg font-black text-brand-blue leading-none">{profile?.name || "Ciudadano"}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {profile?.role === 'super_admin' && (
+            <button 
+              onClick={() => onNavigate("admin")}
+              className="rounded-2xl bg-brand-gold p-3 text-white shadow-lg shadow-brand-gold/20 hover:bg-brand-gold/90 transition-colors"
+            >
+              <Shield className="h-5 w-5" />
+            </button>
+          )}
           <button className="rounded-2xl bg-white p-3 text-brand-slate shadow-sm border border-brand-gold/10 hover:text-brand-gold transition-colors">
             <Search className="h-5 w-5" />
           </button>
