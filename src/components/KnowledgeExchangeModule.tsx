@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { TalentNeed, Course, UserProfile } from "../types";
+import { SkillRegistrationForm } from "./SkillRegistrationForm";
+import { TalentRequestForm } from "./TalentRequestForm";
+import { ApplicationForm } from "./ApplicationForm";
 
 const INITIAL_NEEDS: TalentNeed[] = [
   {
@@ -71,9 +74,20 @@ export function KnowledgeExchangeModule() {
   const [activeTab, setActiveTab] = useState<"banco" | "formacion" | "perfil">("banco");
   const [needs, setNeeds] = useState<TalentNeed[]>(INITIAL_NEEDS);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSkillFormOpen, setIsSkillFormOpen] = useState(false);
+  const [isRequestFormOpen, setIsRequestFormOpen] = useState(false);
+  const [selectedNeed, setSelectedNeed] = useState<TalentNeed | null>(null);
+  const [isApplicationFormOpen, setIsApplicationFormOpen] = useState(false);
 
   return (
     <div className="container mx-auto space-y-8 px-4 py-8">
+      <SkillRegistrationForm isOpen={isSkillFormOpen} onClose={() => setIsSkillFormOpen(false)} />
+      <TalentRequestForm isOpen={isRequestFormOpen} onClose={() => setIsRequestFormOpen(false)} />
+      <ApplicationForm 
+        isOpen={isApplicationFormOpen} 
+        onClose={() => { setIsApplicationFormOpen(false); setSelectedNeed(null); }} 
+        needTitle={selectedNeed?.title || ""} 
+      />
       {/* Header */}
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
@@ -140,7 +154,10 @@ export function KnowledgeExchangeModule() {
                   className="w-full rounded-2xl border border-brand-gold/10 bg-white py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                 />
               </div>
-              <button className="flex items-center justify-center gap-2 rounded-2xl bg-brand-red px-8 py-4 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95">
+              <button 
+                onClick={() => setIsRequestFormOpen(true)}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-brand-red px-8 py-4 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95"
+              >
                 <Plus className="h-5 w-5" />
                 Solicitar Talento
               </button>
@@ -177,7 +194,10 @@ export function KnowledgeExchangeModule() {
                       <p className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/40">Publicado</p>
                       <p className="text-xs font-bold text-brand-blue">Hace 2 días</p>
                     </div>
-                    <button className="rounded-2xl bg-brand-blue px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-blue/20 transition-all hover:bg-brand-blue/90 active:scale-95">
+                    <button 
+                      onClick={() => { setSelectedNeed(need); setIsApplicationFormOpen(true); }}
+                      className="rounded-2xl bg-brand-blue px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-blue/20 transition-all hover:bg-brand-blue/90 active:scale-95"
+                    >
                       Postularme
                     </button>
                   </div>
@@ -316,7 +336,10 @@ export function KnowledgeExchangeModule() {
                 <p className="mb-6 text-sm text-brand-bone/80">
                   Tu conocimiento es vital para el crecimiento de nuestra comunidad.
                 </p>
-                <button className="w-full rounded-2xl bg-brand-red py-4 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95">
+                <button 
+                  onClick={() => setIsSkillFormOpen(true)}
+                  className="w-full rounded-2xl bg-brand-red py-4 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95"
+                >
                   Actualizar Habilidades
                 </button>
               </div>

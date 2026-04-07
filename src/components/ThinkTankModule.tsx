@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { Proposal } from "../types";
+import { ProposalForm } from "./ProposalForm";
+import { ProposalDetailModal } from "./ProposalDetailModal";
 
 const INITIAL_PROPOSALS: Proposal[] = [
   {
@@ -25,7 +27,20 @@ const INITIAL_PROPOSALS: Proposal[] = [
     category: "Economía",
     status: "under-review",
     votes: 156,
-    content: "# Ley de Estímulo al Talento Nacional\n\nEsta propuesta busca crear un marco legal que favorezca la contratación de profesionales venezolanos...",
+    content: `
+# Ley de Estímulo al Talento Nacional
+
+## Introducción
+Esta propuesta busca crear un marco legal que favorezca la contratación de profesionales venezolanos en proyectos de gran escala, asegurando que el capital intelectual local sea el protagonista del desarrollo nacional.
+
+## Objetivos
+1. **Prioridad Local**: Establecer que al menos el 70% de la nómina técnica en proyectos públicos sea de profesionales nacionales.
+2. **Incentivos Fiscales**: Reducción de impuestos para empresas que demuestren programas de capacitación para jóvenes profesionales.
+3. **Certificación de Excelencia**: Crear un sello de calidad para empresas que utilicen talento del Banco de Horas.
+
+## Impacto
+Se espera una reducción de la fuga de cerebros y un aumento en la competitividad de las empresas locales en el mercado internacional.
+    `,
   },
   {
     id: "2",
@@ -35,7 +50,20 @@ const INITIAL_PROPOSALS: Proposal[] = [
     category: "Tecnología",
     status: "draft",
     votes: 89,
-    content: "# Plan de Digitalización\n\nEl objetivo es eliminar la burocracia mediante el uso de contratos inteligentes...",
+    content: `
+# Plan de Digitalización de Servicios Públicos
+
+## Contexto
+La burocracia actual impide una gestión eficiente de los recursos comunitarios. Esta propuesta plantea el uso de tecnologías descentralizadas para garantizar la transparencia.
+
+## Propuestas Clave
+- **Contratos Inteligentes**: Automatización de pagos y asignación de recursos basada en el cumplimiento de metas.
+- **Identidad Digital**: Un sistema único de identificación para que los ciudadanos gestionen sus trámites sin intermediarios.
+- **Auditoría en Tiempo Real**: Un libro contable público donde cada centavo invertido pueda ser rastreado por cualquier miembro de la comunidad.
+
+## Conclusión
+La tecnología no es solo una herramienta, es el camino hacia una gestión pública honesta y eficiente.
+    `,
   }
 ];
 
@@ -43,14 +71,32 @@ export function ThinkTankModule() {
   const [proposals, setProposals] = useState<Proposal[]>(INITIAL_PROPOSALS);
   const [activeTab, setActiveTab] = useState<"wiki" | "commissions">("wiki");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCommission, setSelectedCommission] = useState<string | null>(null);
+  const [isProposalFormOpen, setIsProposalFormOpen] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const filteredProposals = proposals.filter(p => 
     p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const commissions = [
+    { id: "eco", name: "Economía y Finanzas", icon: ThumbsUp, members: 24, active: true, description: "Análisis de impacto económico y propuestas de incentivos fiscales." },
+    { id: "edu", name: "Educación y Cultura", icon: BookOpen, members: 18, active: true, description: "Desarrollo de planes de formación ciudadana y rescate cultural." },
+    { id: "inf", name: "Infraestructura", icon: FileText, members: 15, active: false, description: "Propuestas de mejora de servicios públicos y vialidad." },
+    { id: "sal", name: "Salud Pública", icon: Users, members: 21, active: true, description: "Estrategias de prevención y optimización de centros de salud." },
+    { id: "leg", name: "Leyes y Justicia", icon: CheckCircle2, members: 30, active: true, description: "Redacción de marcos legales y defensa de derechos civiles." },
+  ];
+
   return (
     <div className="container mx-auto space-y-8 px-4 py-8">
+      <ProposalForm isOpen={isProposalFormOpen} onClose={() => setIsProposalFormOpen(false)} />
+      <ProposalDetailModal 
+        proposal={selectedProposal} 
+        isOpen={isDetailModalOpen} 
+        onClose={() => { setIsDetailModalOpen(false); setSelectedProposal(null); }} 
+      />
       {/* Header */}
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
@@ -59,7 +105,7 @@ export function ThinkTankModule() {
         </div>
         <div className="flex items-center gap-2 rounded-2xl bg-brand-bone p-1 border border-brand-gold/10">
           <button
-            onClick={() => setActiveTab("wiki")}
+            onClick={() => { setActiveTab("wiki"); setSelectedCommission(null); }}
             className={cn(
               "flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all",
               activeTab === "wiki" ? "bg-brand-blue text-white shadow-md" : "text-brand-slate hover:bg-brand-gold/10"
@@ -102,7 +148,10 @@ export function ThinkTankModule() {
                   className="w-full rounded-2xl border border-brand-gold/10 bg-white py-4 pl-12 pr-4 text-sm font-medium text-brand-blue focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
                 />
               </div>
-              <button className="flex items-center justify-center gap-2 rounded-2xl bg-brand-red px-8 py-4 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95">
+              <button 
+                onClick={() => setIsProposalFormOpen(true)}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-brand-red px-8 py-4 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95"
+              >
                 <Plus className="h-5 w-5" />
                 Nueva Propuesta
               </button>
@@ -149,7 +198,10 @@ export function ThinkTankModule() {
                         <span className="text-xs font-bold">12</span>
                       </button>
                     </div>
-                    <button className="flex items-center gap-1 text-xs font-bold text-brand-blue hover:text-brand-gold transition-colors">
+                    <button 
+                      onClick={() => { setSelectedProposal(proposal); setIsDetailModalOpen(true); }}
+                      className="flex items-center gap-1 text-xs font-bold text-brand-blue hover:text-brand-gold transition-colors"
+                    >
                       Leer más
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -164,37 +216,83 @@ export function ThinkTankModule() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="grid gap-6 md:grid-cols-3"
+            className="space-y-8"
           >
-            {[
-              { name: "Economía y Finanzas", icon: ThumbsUp, members: 24, active: true },
-              { name: "Educación y Cultura", icon: BookOpen, members: 18, active: true },
-              { name: "Infraestructura", icon: FileText, members: 15, active: false },
-              { name: "Salud Pública", icon: Users, members: 21, active: true },
-              { name: "Leyes y Justicia", icon: CheckCircle2, members: 30, active: true },
-            ].map((comm, i) => (
-              <button
-                key={i}
-                className="group flex flex-col items-start gap-4 rounded-[2rem] border border-brand-gold/10 bg-white p-8 text-left transition-all hover:shadow-lg hover:border-brand-gold/40"
-              >
-                <div className="rounded-2xl bg-brand-bone p-4 text-brand-blue shadow-inner group-hover:bg-brand-blue group-hover:text-white transition-all">
-                  <comm.icon className="h-6 w-6" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-brand-blue">{comm.name}</h4>
-                  <p className="text-xs font-medium text-brand-slate">{comm.members} Miembros Activos</p>
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className={cn(
-                    "h-2 w-2 rounded-full",
-                    comm.active ? "bg-emerald-500 animate-pulse" : "bg-brand-slate/20"
-                  )} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/60">
-                    {comm.active ? "Sesión en curso" : "Inactiva"}
-                  </span>
-                </div>
-              </button>
-            ))}
+            {selectedCommission ? (
+              <div className="space-y-6">
+                <button 
+                  onClick={() => setSelectedCommission(null)}
+                  className="flex items-center gap-2 text-sm font-bold text-brand-blue hover:text-brand-gold transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4 rotate-180" />
+                  Volver a Comisiones
+                </button>
+                
+                {commissions.filter(c => c.id === selectedCommission).map(comm => (
+                  <div key={comm.id} className="rounded-[2.5rem] border border-brand-gold/10 bg-white p-8 shadow-sm">
+                    <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="rounded-2xl bg-brand-blue p-4 text-white">
+                          <comm.icon className="h-8 w-8" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-brand-blue">{comm.name}</h3>
+                          <p className="text-sm font-medium text-brand-slate">{comm.description}</p>
+                        </div>
+                      </div>
+                      <button className="rounded-2xl bg-brand-red px-8 py-4 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95">
+                        Unirme a la Comisión
+                      </button>
+                    </div>
+                    
+                    <div className="mt-12 grid gap-8 md:grid-cols-3">
+                      <div className="rounded-2xl bg-brand-bone p-6 border border-brand-gold/5">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/40 mb-1">Miembros</p>
+                        <p className="text-2xl font-black text-brand-blue">{comm.members}</p>
+                      </div>
+                      <div className="rounded-2xl bg-brand-bone p-6 border border-brand-gold/5">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/40 mb-1">Propuestas</p>
+                        <p className="text-2xl font-black text-brand-blue">8</p>
+                      </div>
+                      <div className="rounded-2xl bg-brand-bone p-6 border border-brand-gold/5">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/40 mb-1">Estado</p>
+                        <div className="flex items-center gap-2">
+                          <span className={cn("h-2 w-2 rounded-full", comm.active ? "bg-emerald-500 animate-pulse" : "bg-brand-slate/20")} />
+                          <p className="text-xl font-black text-brand-blue">{comm.active ? "Activa" : "Inactiva"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-3">
+                {commissions.map((comm, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedCommission(comm.id)}
+                    className="group flex flex-col items-start gap-4 rounded-[2rem] border border-brand-gold/10 bg-white p-8 text-left transition-all hover:shadow-lg hover:border-brand-gold/40"
+                  >
+                    <div className="rounded-2xl bg-brand-bone p-4 text-brand-blue shadow-inner group-hover:bg-brand-blue group-hover:text-white transition-all">
+                      <comm.icon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-brand-blue">{comm.name}</h4>
+                      <p className="text-xs font-medium text-brand-slate">{comm.members} Miembros Activos</p>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className={cn(
+                        "h-2 w-2 rounded-full",
+                        comm.active ? "bg-emerald-500 animate-pulse" : "bg-brand-slate/20"
+                      )} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/60">
+                        {comm.active ? "Sesión en curso" : "Inactiva"}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

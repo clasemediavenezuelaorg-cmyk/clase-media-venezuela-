@@ -28,7 +28,7 @@ export default function App() {
   const renderView = () => {
     switch (currentView) {
       case "home":
-        return <Dashboard />;
+        return <Dashboard onNavigate={setCurrentView} />;
       case "think-tank":
         return <ThinkTankModule />;
       case "exchange":
@@ -52,7 +52,7 @@ export default function App() {
           </div>
         );
       default:
-        return <Dashboard />;
+        return <Dashboard onNavigate={setCurrentView} />;
     }
   };
 

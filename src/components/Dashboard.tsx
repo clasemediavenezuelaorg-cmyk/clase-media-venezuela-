@@ -11,11 +11,13 @@ import {
   TrendingUp,
   MessageSquare,
   ShieldAlert,
-  Trophy
+  Trophy,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { ServiceReportForm } from "./ServiceReportForm";
 import { AlertModal } from "./AlertModal";
+import { SkillRegistrationForm } from "./SkillRegistrationForm";
 
 const services = [
   {
@@ -56,9 +58,31 @@ const services = [
   },
 ];
 
-export function Dashboard() {
+interface DashboardProps {
+  onNavigate: (view: "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile") => void;
+}
+
+export function Dashboard({ onNavigate }: DashboardProps) {
+  const [isSkillFormOpen, setIsSkillFormOpen] = useState(false);
   const [isReportFormOpen, setIsReportFormOpen] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+
+  const handleServiceClick = (id: string) => {
+    switch (id) {
+      case "banco-horas":
+        onNavigate("exchange");
+        break;
+      case "think-tank":
+        onNavigate("think-tank");
+        break;
+      case "apoyo-mutuo":
+        onNavigate("directory");
+        break;
+      case "monitoreo":
+        setIsReportFormOpen(true);
+        break;
+    }
+  };
 
   return (
     <div className="container mx-auto space-y-8 px-4 py-8">
@@ -73,14 +97,18 @@ export function Dashboard() {
           </p>
           <div className="flex flex-wrap gap-3 pt-4">
             <button 
-              onClick={() => setIsReportFormOpen(true)}
+              onClick={() => setIsSkillFormOpen(true)}
               className="flex items-center gap-2 rounded-full bg-brand-red px-6 py-3 font-bold text-white transition-all hover:bg-brand-red/90 active:scale-95 shadow-lg shadow-brand-red/20"
             >
               <Plus className="h-5 w-5" />
               Registrar Habilidad
             </button>
-            <button className="flex items-center gap-2 rounded-full border border-brand-gold/30 px-6 py-3 font-bold text-white transition-all hover:bg-white/10">
-              Ver Mesas Técnicas
+            <button 
+              onClick={() => setIsReportFormOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-brand-gold/30 px-6 py-3 font-bold text-white transition-all hover:bg-white/10"
+            >
+              <AlertTriangle className="h-5 w-5" />
+              Reporte Ciudadano
             </button>
           </div>
         </div>
@@ -89,6 +117,7 @@ export function Dashboard() {
         <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-brand-red/10 blur-3xl"></div>
       </section>
 
+      <SkillRegistrationForm isOpen={isSkillFormOpen} onClose={() => setIsSkillFormOpen(false)} />
       <ServiceReportForm isOpen={isReportFormOpen} onClose={() => setIsReportFormOpen(false)} />
       <AlertModal isOpen={isAlertModalOpen} onClose={() => setIsAlertModalOpen(false)} />
 
@@ -138,6 +167,7 @@ export function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
+              onClick={() => handleServiceClick(service.id)}
               className={cn(
                 "group relative flex flex-col items-start gap-4 rounded-3xl border p-6 text-left transition-all hover:shadow-lg hover:border-brand-gold/40",
                 service.bg,

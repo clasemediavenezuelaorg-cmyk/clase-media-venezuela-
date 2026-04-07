@@ -10,3 +10,13 @@
   --color-brand-bone: #F8F9FA;
   --color-brand-slate: #415A77;
 }
+
+@layer base {
+  .markdown-body h1 { @apply text-3xl font-black text-brand-blue mb-6 mt-8; }
+  .markdown-body h2 { @apply text-2xl font-bold text-brand-blue mb-4 mt-6; }
+  .markdown-body h3 { @apply text-xl font-bold text-brand-blue mb-3 mt-4; }
+  .markdown-body p { @apply text-brand-slate leading-relaxed mb-4; }
+  .markdown-body ul { @apply list-disc list-inside mb-4 space-y-2 text-brand-slate; }
+  .markdown-body li { @apply ml-4; }
+  .markdown-body strong { @apply font-bold text-brand-blue; }
+}

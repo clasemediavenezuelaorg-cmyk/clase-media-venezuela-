@@ -6,9 +6,12 @@ import {
   Star, 
   CheckCircle2, 
   MessageSquare, 
-  Repeat
+  Repeat,
+  Plus
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
+import { ServiceOfferForm } from "./ServiceOfferForm";
+import { DealProposalModal } from "./DealProposalModal";
 
 const categories = ["Todos", "Asesoría", "Diseño", "Logística", "Educación", "Salud"];
 
@@ -48,6 +51,9 @@ const members = [
 export function EntrepreneurDirectory() {
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isOfferFormOpen, setIsOfferFormOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<{ id: number; name: string } | null>(null);
+  const [isDealModalOpen, setIsDealModalOpen] = useState(false);
 
   const filteredMembers = members.filter(m => {
     const matchesCategory = activeCategory === "Todos" || m.category === activeCategory;
@@ -58,12 +64,22 @@ export function EntrepreneurDirectory() {
 
   return (
     <div className="space-y-8">
+      <ServiceOfferForm isOpen={isOfferFormOpen} onClose={() => setIsOfferFormOpen(false)} />
+      <DealProposalModal 
+        isOpen={isDealModalOpen} 
+        onClose={() => { setIsDealModalOpen(false); setSelectedMember(null); }} 
+        memberName={selectedMember?.name || ""} 
+      />
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-3xl font-bold text-brand-blue">Red de Apoyo Mutuo</h2>
           <p className="text-brand-slate">Intercambio de servicios y economía colaborativa entre miembros.</p>
         </div>
-        <button className="rounded-2xl bg-brand-red px-6 py-3 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95">
+        <button 
+          onClick={() => setIsOfferFormOpen(true)}
+          className="flex items-center gap-2 rounded-2xl bg-brand-red px-6 py-3 font-bold text-white shadow-lg shadow-brand-red/20 transition-all hover:bg-brand-red/90 active:scale-95"
+        >
+          <Plus className="h-5 w-5" />
           Ofrecer mi Servicio
         </button>
       </div>
@@ -143,8 +159,11 @@ export function EntrepreneurDirectory() {
             </div>
 
             <div className="mt-8 flex items-center gap-3">
-              <button className="flex-1 rounded-xl bg-brand-blue py-3 text-xs font-bold text-white shadow-lg shadow-brand-blue/20 transition-all hover:bg-brand-blue/90">
-                Proponer Trueque
+              <button 
+                onClick={() => { setSelectedMember(member); setIsDealModalOpen(true); }}
+                className="flex-1 rounded-xl bg-brand-blue py-3 text-xs font-bold text-white shadow-lg shadow-brand-blue/20 transition-all hover:bg-brand-blue/90"
+              >
+                Hacer un Trato
               </button>
               <button className="rounded-xl bg-brand-bone p-3 text-brand-blue border border-brand-gold/10 hover:bg-brand-gold/10 transition-all">
                 <MessageSquare className="h-4 w-4" />
