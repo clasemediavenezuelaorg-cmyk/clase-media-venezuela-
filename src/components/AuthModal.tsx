@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, User, Phone, Lock, Loader2, LogIn, UserPlus } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { cn } from "@/src/lib/utils";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -69,9 +70,13 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
     } catch (error: any) {
       console.error("Auth error:", error);
       let errorMessage = error.message || "Error en la autenticación";
-      if (errorMessage.includes("Failed to fetch")) {
+      
+      if (errorMessage.includes("Invalid login credentials")) {
+        errorMessage = "Credenciales inválidas. ¿Ya te registraste? Si es tu primera vez, usa la opción 'Regístrate' abajo. 🔑";
+      } else if (errorMessage.includes("Failed to fetch")) {
         errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a internet y la configuración de Supabase en 'Settings > Secrets'. 🌐🔌";
       }
+      
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -109,7 +114,35 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
               </button>
             </div>
 
+            <div className="flex border-b border-brand-gold/10">
+              <button 
+                onClick={() => setMode("login")}
+                className={cn(
+                  "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
+                  mode === "login" ? "bg-brand-blue text-white" : "bg-white text-brand-slate hover:bg-brand-bone"
+                )}
+              >
+                Entrar
+              </button>
+              <button 
+                onClick={() => setMode("register")}
+                className={cn(
+                  "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
+                  mode === "register" ? "bg-brand-blue text-white" : "bg-white text-brand-slate hover:bg-brand-bone"
+                )}
+              >
+                Registrarme
+              </button>
+            </div>
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {mode === "login" && (
+                <div className="rounded-2xl bg-brand-gold/10 p-4 border border-brand-gold/20 mb-2">
+                  <p className="text-[10px] font-bold text-brand-blue leading-tight">
+                    💡 <span className="uppercase">Importante:</span> Si es tu primera vez usando esta base de datos, debes usar la pestaña <span className="text-brand-red">"REGISTRARME"</span> arriba.
+                  </p>
+                </div>
+              )}
               {mode === "register" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-brand-blue/60">Nombre Completo</label>

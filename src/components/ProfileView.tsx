@@ -4,19 +4,32 @@ import { useAuth } from "../context/AuthContext";
 
 interface ProfileViewProps {
   onNavigate: (view: "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile" | "admin") => void;
+  onOpenAuth: () => void;
 }
 
-export function ProfileView({ onNavigate }: ProfileViewProps) {
+export function ProfileView({ onNavigate, onOpenAuth }: ProfileViewProps) {
   const { profile, signOut } = useAuth();
 
   if (!profile) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center text-center p-8">
-        <div className="rounded-full bg-brand-bone p-6 mb-4">
-          <User className="h-12 w-12 text-brand-slate/20" />
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-full bg-brand-bone p-8 mb-6 border border-brand-gold/10 shadow-inner"
+        >
+          <User className="h-16 w-16 text-brand-slate/20" />
+        </motion.div>
         <h2 className="text-2xl font-black text-brand-blue">Inicia Sesión</h2>
-        <p className="text-brand-slate mt-2">Regístrate para ver tu perfil y participar en el chat.</p>
+        <p className="text-brand-slate mt-2 mb-8 max-w-xs">Regístrate para ver tu perfil, participar en el chat y acceder a herramientas exclusivas.</p>
+        
+        <button 
+          onClick={onOpenAuth}
+          className="flex items-center gap-2 rounded-2xl bg-brand-blue px-8 py-4 font-bold text-white shadow-lg shadow-brand-blue/20 transition-all hover:bg-brand-blue/90 active:scale-95"
+        >
+          <Shield className="h-5 w-5" />
+          Registrarme / Iniciar Sesión
+        </button>
       </div>
     );
   }
@@ -65,7 +78,7 @@ export function ProfileView({ onNavigate }: ProfileViewProps) {
           </div>
         </div>
 
-        {profile.role === 'super_admin' && (
+        {(profile.role === 'super_admin' || profile.role === 'admin') && (
           <button 
             onClick={() => onNavigate("admin")}
             className="flex w-full items-center justify-between rounded-2xl bg-brand-gold/10 p-4 text-brand-gold transition-all hover:bg-brand-gold/20"

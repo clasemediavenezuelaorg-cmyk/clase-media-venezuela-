@@ -66,7 +66,7 @@ function AppContent() {
       case "profile":
         return (
           <div className="container mx-auto px-4 py-8">
-            <ProfileView onNavigate={handleNavigate} />
+            <ProfileView onNavigate={handleNavigate} onOpenAuth={() => setIsAuthModalOpen(true)} />
           </div>
         );
       case "admin":
