@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { Header } from "./components/Header";
-import { Dashboard } from "./components/Dashboard";
+import { BentoDashboard } from "./components/BentoDashboard";
 import { ThinkTankModule } from "./components/ThinkTankModule";
 import { KnowledgeExchangeModule } from "./components/KnowledgeExchangeModule";
 import { ChatModule } from "./components/ChatModule";
@@ -28,7 +28,7 @@ export default function App() {
   const renderView = () => {
     switch (currentView) {
       case "home":
-        return <Dashboard onNavigate={setCurrentView} />;
+        return <BentoDashboard onNavigate={setCurrentView} />;
       case "think-tank":
         return <ThinkTankModule />;
       case "exchange":
@@ -52,20 +52,29 @@ export default function App() {
           </div>
         );
       default:
-        return <Dashboard onNavigate={setCurrentView} />;
+        return <BentoDashboard onNavigate={setCurrentView} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-brand-bone font-sans text-brand-blue antialiased">
-      <Header />
+    <div className={cn(
+      "min-h-screen bg-brand-bone font-sans text-brand-blue antialiased",
+      currentView === "home" && "h-screen overflow-hidden"
+    )}>
+      {currentView !== "home" && <Header />}
       
-      <main className="pb-20 lg:pb-8">
+      <main className={cn(
+        "pb-20 lg:pb-8",
+        currentView === "home" && "h-full pb-0"
+      )}>
         {renderView()}
       </main>
       
-      {/* Mobile Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-brand-gold/20 bg-white px-4 lg:hidden">
+      {/* Floating Navigation Bar */}
+      <nav className={cn(
+        "fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex h-16 w-[90%] max-w-md items-center justify-around rounded-[2rem] border border-brand-gold/20 bg-white/80 backdrop-blur-md px-6 shadow-2xl transition-all duration-300",
+        currentView === "home" ? "bg-white/40 border-white/20" : "bg-white/80"
+      )}>
         <button 
           onClick={() => setCurrentView("home")}
           className={cn("flex flex-col items-center gap-1 transition-all", currentView === "home" ? "text-brand-blue scale-110" : "text-brand-slate")}
@@ -89,10 +98,13 @@ export default function App() {
         </button>
         <button 
           onClick={() => setCurrentView("chat")}
-          className={cn("flex flex-col items-center gap-1 transition-all", currentView === "chat" ? "text-brand-blue scale-110" : "text-brand-slate")}
+          className={cn("relative flex flex-col items-center gap-1 transition-all", currentView === "chat" ? "text-brand-blue scale-110" : "text-brand-slate")}
         >
           <MessageSquare className="h-5 w-5" />
           <span className="text-[10px] font-bold">Chat</span>
+          <span className="absolute -top-1 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-brand-red text-[8px] font-black text-white shadow-lg shadow-brand-red/20">
+            3
+          </span>
         </button>
         <button 
           onClick={() => setCurrentView("directory")}
