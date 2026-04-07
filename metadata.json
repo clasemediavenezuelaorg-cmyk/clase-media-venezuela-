@@ -1,0 +1,5 @@
+{
+  "name": "Clase Media",
+  "description": "Plataforma de gestión comunitaria moderna para el reporte de servicios, transparencia financiera y fomento de la economía local.",
+  "requestFramePermissions": ["geolocation"]
+}
