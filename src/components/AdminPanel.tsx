@@ -50,7 +50,7 @@ export function AdminPanel() {
       // Find user by phone
       const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('*')
         .eq('phone', newAdminPhone)
         .single();
 

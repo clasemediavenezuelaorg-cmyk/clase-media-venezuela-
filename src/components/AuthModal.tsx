@@ -26,10 +26,20 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
         const result = await checkSupabaseConnection();
         setConnectionStatus(result === true ? "connected" : "error");
         
-        // Check if any profiles exist
-        const { count } = await supabase
+        // Check if any profiles exist with fallback
+        let count = 0;
+        const { count: countProfiles, error: errorProfiles } = await supabase
           .from("profiles")
           .select("*", { count: 'exact', head: true });
+          
+        if (errorProfiles) {
+          const { count: countPerfiles } = await supabase
+            .from("perfiles")
+            .select("*", { count: 'exact', head: true });
+          count = countPerfiles || 0;
+        } else {
+          count = countProfiles || 0;
+        }
           
         if (count === 0) {
           console.log("No se detectaron usuarios. Cambiando a modo Registro.");
@@ -328,10 +338,16 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                   {mode === "login" ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
                 </button>
                 
-                <div className="pt-2 border-t border-brand-gold/5">
-                  <p className="text-[8px] text-brand-slate/40 font-mono">
-                    PROYECTO: {supabase.auth.onAuthStateChange.name ? 'tygwqsyzudinvtayscpj' : 'Cargando...'}
-                  </p>
+                <div className="pt-4 border-t border-brand-gold/5">
+                  <div className="rounded-lg bg-brand-slate/5 p-2 text-left">
+                    <p className="text-[7px] font-mono text-brand-slate/60 uppercase tracking-tighter mb-1">Datos de envío (Debug):</p>
+                    <p className="text-[8px] font-mono text-brand-blue/80 truncate">
+                      EMAIL: <span className="font-bold">{phone.trim().toLowerCase()}@clasemedia.com</span>
+                    </p>
+                    <p className="text-[8px] font-mono text-brand-blue/80">
+                      PROYECTO: <span className="font-bold">tygwqsyzudinvtayscpj</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             </form>

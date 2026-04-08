@@ -53,7 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile not found, this is handled by AuthModal emergency creation
+          setProfile(null);
+          return;
+        }
+        throw error;
+      }
+      
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
