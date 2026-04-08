@@ -19,6 +19,17 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "error">("checking");
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (cooldown > 0) {
+      timer = setInterval(() => {
+        setCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   useEffect(() => {
     if (isOpen) {
@@ -86,8 +97,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
       
       if (errorMessage.includes("Invalid login credentials")) {
         errorMessage = "Credenciales inválidas. ¿Ya te registraste en ESTA base de datos? Si es tu primera vez, usa la pestaña 'REGISTRARME' arriba. 🔑";
+      } else if (errorMessage.includes("Email not confirmed")) {
+        errorMessage = "⚠️ ERROR DE CONFIGURACIÓN: El correo no ha sido confirmado. Por favor, ve a tu panel de Supabase (Authentication > Providers > Email) y DESACTIVA la opción 'Confirm Email' para permitir el acceso directo. 📧🚫";
       } else if (errorMessage.includes("Email rate limit exceeded") || errorMessage.includes("email rate limit exceeded")) {
-        errorMessage = "Has intentado demasiadas veces en poco tiempo. Por seguridad, por favor espera 2 o 3 minutos antes de intentar de nuevo. ⏳🛡️";
+        errorMessage = "Has intentado demasiadas veces en poco tiempo. Por seguridad, por favor espera 1 minuto antes de intentar de nuevo. ⏳🛡️";
+        setCooldown(60);
       } else if (errorMessage.includes("Failed to fetch")) {
         errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a internet y la configuración de Supabase en 'Settings > Secrets'. 🌐🔌";
       }
@@ -256,13 +270,21 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 </div>
               )}
 
+              {cooldown > 0 && (
+                <div className="rounded-xl bg-brand-red/10 p-3 border border-brand-red/20">
+                  <p className="text-[10px] font-bold text-brand-red text-center">
+                    ⚠️ BLOQUEO TEMPORAL: Por favor espera a que termine el contador para intentar de nuevo.
+                  </p>
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || cooldown > 0}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-blue py-4 font-bold text-white shadow-lg shadow-brand-blue/20 transition-all hover:bg-brand-blue/90 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                  mode === "login" ? "Entrar" : "Registrarme"
+                  cooldown > 0 ? `Espera ${cooldown}s... ⏳` : (mode === "login" ? "Entrar" : "Registrarme")
                 )}
               </button>
 
