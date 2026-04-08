@@ -57,6 +57,12 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
     }
   }, [isOpen]);
 
+  const copyRepairSQL = () => {
+    const sql = "NOTIFY pgrst, 'reload schema';";
+    navigator.clipboard.writeText(sql);
+    alert("Comando SQL copiado al portapapeles. Pégalo en el SQL Editor de Supabase y ejecútalo.");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -254,9 +260,20 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {error && (
-                <div className="flex items-start gap-3 rounded-2xl bg-brand-red/10 p-4 text-brand-red border border-brand-red/20">
-                  <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-                  <p className="text-xs font-bold leading-relaxed">{error}</p>
+                <div className="flex flex-col gap-3 rounded-2xl bg-brand-red/10 p-4 text-brand-red border border-brand-red/20">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                    <p className="text-xs font-bold leading-relaxed">{error}</p>
+                  </div>
+                  {(error.includes("ESQUEMA") || error.includes("schema")) && (
+                    <button 
+                      type="button"
+                      onClick={copyRepairSQL}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-brand-red/20 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-brand-red/30 transition-all"
+                    >
+                      Copiar Comando de Reparación 📋
+                    </button>
+                  )}
                 </div>
               )}
               {mode === "login" && (

@@ -31,8 +31,17 @@ export const checkSupabaseConnection = async () => {
       // If it's a schema error, it's a Supabase Cache issue
       if (errorProfiles.message.includes('schema') || errorProfiles.message.includes('cache')) {
         return { 
-          error: 'Error de Esquema en Supabase',
-          details: 'La base de datos necesita recargar su caché. Por favor, ve al SQL Editor de Supabase y ejecuta: NOTIFY pgrst, "reload schema";',
+          error: 'Error de Esquema en Supabase (PostgREST Cache)',
+          details: 'La base de datos ha cambiado pero el servicio de API no se ha enterado. Por favor, ve al SQL Editor de Supabase y ejecuta: NOTIFY pgrst, "reload schema";',
+          isSchemaError: true
+        };
+      }
+      
+      // Check if it's a "relation does not exist" error
+      if (errorProfiles.message.includes('relation') && errorProfiles.message.includes('does not exist')) {
+        return {
+          error: 'Error de Estructura: Tabla "profiles" no encontrada',
+          details: 'Parece que la tabla de perfiles no existe. Por favor, ejecuta el script de creación de tablas en el SQL Editor de Supabase.',
           isSchemaError: true
         };
       }
