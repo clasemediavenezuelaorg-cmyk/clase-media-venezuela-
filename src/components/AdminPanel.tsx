@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Shield, UserPlus, Trash2, Users, Briefcase, Loader2, CheckCircle, Palette } from "lucide-react";
+import { Shield, UserPlus, Trash2, Users, Briefcase, Loader2, CheckCircle, Palette, LayoutGrid } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { BrandingSettings } from "./BrandingSettings";
+import { OrganizationManager } from "./OrganizationManager";
 
 interface AdminProfile {
   id: string;
@@ -20,7 +21,7 @@ export function AdminPanel() {
   const [isAdding, setIsAdding] = useState(false);
   const [newAdminPhone, setNewAdminPhone] = useState("");
   const [newAdminDept, setNewAdminDept] = useState("");
-  const [activeTab, setActiveTab] = useState<"admins" | "branding">("admins");
+  const [activeTab, setActiveTab] = useState<"admins" | "branding" | "organization">("admins");
 
   useEffect(() => {
     fetchAdmins();
@@ -129,11 +130,23 @@ export function AdminPanel() {
             <Palette className="h-4 w-4" />
             Identidad
           </button>
+          <button 
+            onClick={() => setActiveTab("organization")}
+            className={cn(
+              "flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold transition-all",
+              activeTab === "organization" ? "bg-brand-blue text-white shadow-lg shadow-brand-blue/20" : "bg-white text-brand-slate border border-brand-gold/10"
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Institucional
+          </button>
         </div>
       </header>
 
       {activeTab === "branding" ? (
         <BrandingSettings />
+      ) : activeTab === "organization" ? (
+        <OrganizationManager />
       ) : (
         <div className="grid gap-8 lg:grid-cols-3">
         {/* Formulario para agregar */}

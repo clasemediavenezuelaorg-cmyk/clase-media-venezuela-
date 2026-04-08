@@ -12,7 +12,8 @@ import {
   Search,
   ChevronRight,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  LayoutGrid
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { CircularProgress } from "./CircularProgress";
@@ -22,7 +23,7 @@ import { checkSupabaseConnection } from "../lib/supabase";
 import { useSettings } from "../hooks/useSettings";
 
 interface BentoDashboardProps {
-  onNavigate: (view: "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile" | "admin") => void;
+  onNavigate: (view: "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile" | "admin" | "organization") => void;
 }
 
 export function BentoDashboard({ onNavigate }: BentoDashboardProps) {
@@ -164,21 +165,19 @@ export function BentoDashboard({ onNavigate }: BentoDashboardProps) {
           <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-brand-gold/10 blur-2xl" />
         </motion.div>
 
-        {/* Tile 3: Meta Social (Circular Progress) */}
+        {/* Tile 3: Nuestra Organización */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="relative overflow-hidden rounded-[2.5rem] bg-white p-5 shadow-sm border border-brand-gold/10 flex flex-col items-center justify-center gap-2"
+          onClick={() => onNavigate("organization")}
+          className="relative overflow-hidden rounded-[2.5rem] bg-white p-5 shadow-sm border border-brand-gold/10 flex flex-col items-center justify-center gap-2 cursor-pointer group"
         >
-          <p className="text-[10px] font-black uppercase tracking-widest text-brand-slate/40">Meta Social</p>
-          <div className="relative">
-            <CircularProgress percentage={75} size={85} strokeWidth={8} color="stroke-brand-gold" />
-            <div className="absolute inset-0 flex items-center justify-center scale-75 opacity-30">
-              <CircularProgress percentage={40} size={50} strokeWidth={8} color="stroke-brand-red" />
-            </div>
+          <div className="rounded-2xl bg-brand-gold/10 p-4 text-brand-gold transition-transform group-hover:scale-110">
+            <LayoutGrid className="h-8 w-8" />
           </div>
-          <p className="text-[10px] font-bold text-brand-blue text-center leading-tight">Ley de Propiedad<br/>Horizontal</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-brand-slate/40">Institucional</p>
+          <h4 className="text-sm font-black text-brand-blue text-center leading-tight">Nuestra<br/>Organización</h4>
         </motion.div>
 
         {/* Tile 4: Banco de Horas (Talento) */}

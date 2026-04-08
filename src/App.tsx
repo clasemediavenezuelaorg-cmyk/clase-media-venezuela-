@@ -10,6 +10,7 @@ import { ThinkTankModule } from "./components/ThinkTankModule";
 import { KnowledgeExchangeModule } from "./components/KnowledgeExchangeModule";
 import { ChatModule } from "./components/ChatModule";
 import { EntrepreneurDirectory } from "./components/EntrepreneurDirectory";
+import { OrganizationModule } from "./components/OrganizationModule";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AuthModal } from "./components/AuthModal";
 import { AdminPanel } from "./components/AdminPanel";
@@ -21,11 +22,12 @@ import {
   MessageSquare, 
   Handshake,
   User,
-  Shield
+  Shield,
+  LayoutGrid
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 
-type View = "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile" | "admin";
+type View = "home" | "think-tank" | "exchange" | "chat" | "directory" | "profile" | "admin" | "organization";
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>("home");
@@ -51,6 +53,8 @@ function AppContent() {
         return <ThinkTankModule />;
       case "exchange":
         return <KnowledgeExchangeModule />;
+      case "organization":
+        return <OrganizationModule />;
       case "chat":
         return (
           <div className="container mx-auto px-4 py-8">
@@ -119,6 +123,13 @@ function AppContent() {
         >
           <Users className="h-5 w-5" />
           <span className="text-[10px] font-bold">Talento</span>
+        </button>
+        <button 
+          onClick={() => handleNavigate("organization")}
+          className={cn("flex flex-col items-center gap-1 transition-all", currentView === "organization" ? "text-brand-blue scale-110" : "text-brand-slate")}
+        >
+          <LayoutGrid className="h-5 w-5" />
+          <span className="text-[10px] font-bold">Org</span>
         </button>
         <button 
           onClick={() => handleNavigate("chat")}

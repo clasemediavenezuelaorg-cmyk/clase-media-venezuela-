@@ -99,6 +99,55 @@ INSERT INTO service_offers (user_id, profession, offer_description, need_descrip
 SELECT id, 'Contador Público', 'Asesoría contable y tributaria', 'Diseño de logo para mi firma', 4.9, TRUE 
 FROM profiles WHERE name = 'Carlos Ruiz';
 
+-- Table for organization structure
+CREATE TABLE organization_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  level TEXT NOT NULL, -- 'national', 'state'
+  state TEXT, -- State name if level is 'state'
+  photo_url TEXT,
+  bio TEXT,
+  order_index INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Table for achievements (Logros)
+CREATE TABLE achievements (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  date DATE,
+  image_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Table for assemblies (Asambleas)
+CREATE TABLE assemblies (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  date TIMESTAMP WITH TIME ZONE,
+  location TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Table for plans (Planes)
+CREATE TABLE plans (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  target_date DATE,
+  status TEXT DEFAULT 'planned', -- 'planned', 'in-progress', 'completed'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Initial Data for Structure
+INSERT INTO organization_members (name, role, level, photo_url)
+VALUES 
+('Dirección Nacional', 'Presidente', 'national', 'https://picsum.photos/seed/pres/400/400'),
+('Coordinación General', 'Secretario', 'national', 'https://picsum.photos/seed/sec/400/400');
+
 -- Table for application settings
 CREATE TABLE app_settings (
   id TEXT PRIMARY KEY DEFAULT 'global',
