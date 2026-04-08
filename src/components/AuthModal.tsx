@@ -19,6 +19,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "error">("checking");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,10 +28,15 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
         if (result !== true) {
           setConnectionStatus("error");
           console.error("Fallo de conexión inicial:", result);
+          // If it's a schema error, we show it in the UI
+          if (typeof result === 'object' && result.isSchemaError) {
+            setError(result.details);
+          }
           return;
         }
         
         setConnectionStatus("connected");
+        setError(null);
         
         // Check if any profiles exist
         const { count, error } = await supabase
@@ -39,7 +45,6 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
           
         if (error) {
           console.error("Error al contar perfiles:", error.message);
-          // Don't switch mode if there's a DB error
           return;
         }
           
@@ -143,11 +148,13 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
       }
 
       onClose();
-    } catch (error: any) {
-      console.error("Auth error:", error);
-      let errorMessage = error.message || "Error en la autenticación";
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      let errorMessage = err.message || "Error en la autenticación";
       
-      if (errorMessage.includes("Invalid login credentials")) {
+      if (errorMessage.includes("schema") || errorMessage.includes("cache")) {
+        errorMessage = "🔄 ERROR DE ESQUEMA: Supabase no reconoce las tablas. Por favor, ve al SQL Editor de Supabase y ejecuta: NOTIFY pgrst, 'reload schema'; para refrescar la base de datos.";
+      } else if (errorMessage.includes("Invalid login credentials")) {
         errorMessage = "❌ ACCESO DENEGADO: El usuario o la clave son incorrectos. Si acabas de conectar esta base de datos, DEBES usar la pestaña 'REGISTRARME' primero para crear tu cuenta. 🔑🛡️";
       } else if (errorMessage.includes("Email not confirmed")) {
         errorMessage = "⚠️ ERROR DE CONFIGURACIÓN: El correo no ha sido confirmado. Por favor, ve a tu panel de Supabase (Authentication > Providers > Email) y DESACTIVA la opción 'Confirm Email' para permitir el acceso directo. 📧🚫";
@@ -157,7 +164,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
         errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a internet y la configuración de Supabase en 'Settings > Secrets'. 🌐🔌";
       }
       
-      alert(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -215,7 +222,10 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
             <div className="flex border-b border-brand-gold/10">
               <button 
-                onClick={() => setMode("login")}
+                onClick={() => {
+                  setMode("login");
+                  setError(null);
+                }}
                 className={cn(
                   "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
                   mode === "login" ? "bg-brand-blue text-white" : "bg-white text-brand-slate hover:bg-brand-bone"
@@ -224,7 +234,10 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 Entrar
               </button>
               <button 
-                onClick={() => setMode("register")}
+                onClick={() => {
+                  setMode("register");
+                  setError(null);
+                }}
                 className={cn(
                   "relative flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
                   mode === "register" ? "bg-brand-blue text-white" : "bg-white text-brand-slate hover:bg-brand-bone"
@@ -240,6 +253,12 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {error && (
+                <div className="flex items-start gap-3 rounded-2xl bg-brand-red/10 p-4 text-brand-red border border-brand-red/20">
+                  <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                  <p className="text-xs font-bold leading-relaxed">{error}</p>
+                </div>
+              )}
               {mode === "login" && (
                 <div className="rounded-2xl bg-brand-gold/10 p-4 border border-brand-gold/20 mb-2">
                   <p className="text-[10px] font-bold text-brand-blue leading-tight">

@@ -22,22 +22,29 @@ export const supabase = createClient(
 
 export const checkSupabaseConnection = async () => {
   try {
-    const { error: errorProfiles } = await supabase.from('profiles').select('*').limit(1);
+    // Try a very simple query
+    const { error: errorProfiles } = await supabase.from('profiles').select('id').limit(1);
     
     if (errorProfiles) {
-      console.error('Error crítico en tabla "profiles":', errorProfiles.message);
+      console.warn('Aviso en tabla "profiles":', errorProfiles.message);
       
-      const { error: errorPerfiles } = await supabase.from('perfiles').select('*').limit(1);
-      
+      // If it's a schema error, it's a Supabase Cache issue
+      if (errorProfiles.message.includes('schema') || errorProfiles.message.includes('cache')) {
+        return { 
+          error: 'Error de Esquema en Supabase',
+          details: 'La base de datos necesita recargar su caché. Por favor, ve al SQL Editor de Supabase y ejecuta: NOTIFY pgrst, "reload schema";',
+          isSchemaError: true
+        };
+      }
+
+      // Try fallback
+      const { error: errorPerfiles } = await supabase.from('perfiles').select('id').limit(1);
       if (errorPerfiles) {
-        console.error('Error crítico en tabla "perfiles":', errorPerfiles.message);
-        throw new Error(`Error de base de datos: ${errorPerfiles.message}. Por favor, ejecuta el script de REPARACIÓN en Supabase.`);
+        return { error: errorPerfiles.message };
       }
     }
     return true;
   } catch (err: any) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('Supabase Connection Error Details:', err);
-    return { error: msg };
+    return { error: err.message || 'Error de conexión' };
   }
 };

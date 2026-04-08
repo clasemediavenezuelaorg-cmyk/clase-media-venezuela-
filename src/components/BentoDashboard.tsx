@@ -38,7 +38,7 @@ export function BentoDashboard({ onNavigate }: BentoDashboardProps) {
     const verifyConnection = async () => {
       const result = await checkSupabaseConnection();
       if (typeof result === 'object' && result.error) {
-        setConnectionError(result.error);
+        setConnectionError(result.details || result.error);
       }
     };
     verifyConnection();
