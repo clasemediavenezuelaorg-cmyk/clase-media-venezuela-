@@ -19,17 +19,6 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "error">("checking");
-  const [cooldown, setCooldown] = useState(0);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (cooldown > 0) {
-      timer = setInterval(() => {
-        setCooldown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [cooldown]);
 
   useEffect(() => {
     if (isOpen) {
@@ -56,14 +45,15 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
     setLoading(true);
 
     try {
+      const cleanPhone = phone.trim().toLowerCase();
+      const email = cleanPhone.includes('@') ? cleanPhone : `${cleanPhone}@clasemedia.com`;
+
       if (mode === "register") {
-        console.log("Iniciando proceso de registro para:", phone);
+        console.log("Iniciando proceso de registro para:", cleanPhone);
         if (password !== confirmPassword) {
           throw new Error("Las contraseñas no coinciden");
         }
 
-        // Use phone as a dummy email for Supabase Auth
-        const email = `${phone}@cm.app`;
         console.log("Email de registro generado:", email);
         
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -73,6 +63,9 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
         if (authError) {
           console.error("Error en signUp de Supabase:", authError);
+          if (authError.message.includes("not valid")) {
+            throw new Error("Supabase rechaza el formato del correo. Por favor, asegúrate de que el 'Email Provider' esté activado en tu panel de Supabase.");
+          }
           throw authError;
         }
 
@@ -84,13 +77,13 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
             .select("*", { count: 'exact', head: true });
 
           const isFirstUser = count === 0;
-          const isSuperAdmin = isFirstUser || phone === "cmv-001";
+          const isSuperAdmin = isFirstUser || cleanPhone === "cmv-001";
 
           // Create profile
           const { error: profileError } = await supabase.from("profiles").insert({
             id: authData.user.id,
-            name,
-            phone,
+            name: name.trim(),
+            phone: cleanPhone,
             role: isSuperAdmin ? "super_admin" : "user",
           });
 
@@ -101,7 +94,6 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
           console.log("Perfil creado exitosamente con rol:", isSuperAdmin ? "super_admin" : "user");
         }
       } else {
-        const email = `${phone}@cm.app`;
         console.log("Intentando entrar con:", email);
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -112,7 +104,30 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
           console.error("Error en signIn de Supabase:", error);
           throw error;
         }
-        console.log("Inicio de sesión exitoso.");
+        
+        console.log("Inicio de sesión exitoso en Auth. Verificando perfil...");
+        
+        // Ensure profile exists even if login was used
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", userData.user.id)
+            .single();
+            
+          if (!profile) {
+            console.log("Perfil no encontrado tras login. Creando perfil de emergencia...");
+            const isSuperAdmin = cleanPhone === "cmv-001";
+            await supabase.from("profiles").insert({
+              id: userData.user.id,
+              name: name.trim() || "Administrador",
+              phone: cleanPhone,
+              role: isSuperAdmin ? "super_admin" : "user",
+            });
+          }
+        }
+        console.log("Acceso concedido.");
       }
 
       onClose();
@@ -125,8 +140,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
       } else if (errorMessage.includes("Email not confirmed")) {
         errorMessage = "⚠️ ERROR DE CONFIGURACIÓN: El correo no ha sido confirmado. Por favor, ve a tu panel de Supabase (Authentication > Providers > Email) y DESACTIVA la opción 'Confirm Email' para permitir el acceso directo. 📧🚫";
       } else if (errorMessage.includes("Email rate limit exceeded") || errorMessage.includes("email rate limit exceeded")) {
-        errorMessage = "Has intentado demasiadas veces en poco tiempo. Por seguridad, por favor espera 1 minuto antes de intentar de nuevo. ⏳🛡️";
-        setCooldown(60);
+        errorMessage = "⏳ LÍMITE DE SUPABASE: Has hecho demasiados intentos seguidos. Espera un momento o aumenta los límites en tu panel de Supabase (Authentication > Settings > Rate Limits).";
       } else if (errorMessage.includes("Failed to fetch")) {
         errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a internet y la configuración de Supabase en 'Settings > Secrets'. 🌐🔌";
       }
@@ -295,21 +309,13 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 </div>
               )}
 
-              {cooldown > 0 && (
-                <div className="rounded-xl bg-brand-red/10 p-3 border border-brand-red/20">
-                  <p className="text-[10px] font-bold text-brand-red text-center">
-                    ⚠️ BLOQUEO TEMPORAL: Por favor espera a que termine el contador para intentar de nuevo.
-                  </p>
-                </div>
-              )}
-
               <button
                 type="submit"
-                disabled={loading || cooldown > 0}
+                disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-blue py-4 font-bold text-white shadow-lg shadow-brand-blue/20 transition-all hover:bg-brand-blue/90 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                  cooldown > 0 ? `Espera ${cooldown}s... ⏳` : (mode === "login" ? "Entrar" : "Registrarme")
+                  mode === "login" ? "Entrar" : "Registrarme"
                 )}
               </button>
 
