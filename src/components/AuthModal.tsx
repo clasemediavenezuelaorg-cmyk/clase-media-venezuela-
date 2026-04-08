@@ -36,6 +36,16 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
       const check = async () => {
         const result = await checkSupabaseConnection();
         setConnectionStatus(result === true ? "connected" : "error");
+        
+        // Check if any profiles exist
+        const { count } = await supabase
+          .from("profiles")
+          .select("*", { count: 'exact', head: true });
+          
+        if (count === 0) {
+          console.log("No se detectaron usuarios. Cambiando a modo Registro.");
+          setMode("register");
+        }
       };
       check();
     }
@@ -47,20 +57,27 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
     try {
       if (mode === "register") {
+        console.log("Iniciando proceso de registro para:", phone);
         if (password !== confirmPassword) {
           throw new Error("Las contraseñas no coinciden");
         }
 
         // Use phone as a dummy email for Supabase Auth
         const email = `${phone}@cm.app`;
+        console.log("Email de registro generado:", email);
+        
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
           password,
         });
 
-        if (authError) throw authError;
+        if (authError) {
+          console.error("Error en signUp de Supabase:", authError);
+          throw authError;
+        }
 
         if (authData.user) {
+          console.log("Usuario creado en Auth. Creando perfil...");
           // Check if this is the first user
           const { count } = await supabase
             .from("profiles")
@@ -77,7 +94,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
             role: isSuperAdmin ? "super_admin" : "user",
           });
 
-          if (profileError) throw profileError;
+          if (profileError) {
+            console.error("Error al crear perfil en base de datos:", profileError);
+            throw profileError;
+          }
+          console.log("Perfil creado exitosamente con rol:", isSuperAdmin ? "super_admin" : "user");
         }
       } else {
         const email = `${phone}@cm.app`;
@@ -87,7 +108,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error en signIn de Supabase:", error);
+          throw error;
+        }
+        console.log("Inicio de sesión exitoso.");
       }
 
       onClose();
@@ -96,7 +121,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
       let errorMessage = error.message || "Error en la autenticación";
       
       if (errorMessage.includes("Invalid login credentials")) {
-        errorMessage = "Credenciales inválidas. ¿Ya te registraste en ESTA base de datos? Si es tu primera vez, usa la pestaña 'REGISTRARME' arriba. 🔑";
+        errorMessage = "❌ ACCESO DENEGADO: El usuario o la clave son incorrectos. Si acabas de conectar esta base de datos, DEBES usar la pestaña 'REGISTRARME' primero para crear tu cuenta. 🔑🛡️";
       } else if (errorMessage.includes("Email not confirmed")) {
         errorMessage = "⚠️ ERROR DE CONFIGURACIÓN: El correo no ha sido confirmado. Por favor, ve a tu panel de Supabase (Authentication > Providers > Email) y DESACTIVA la opción 'Confirm Email' para permitir el acceso directo. 📧🚫";
       } else if (errorMessage.includes("Email rate limit exceeded") || errorMessage.includes("email rate limit exceeded")) {
