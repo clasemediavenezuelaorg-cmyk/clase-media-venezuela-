@@ -24,21 +24,23 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
     if (isOpen) {
       const check = async () => {
         const result = await checkSupabaseConnection();
-        setConnectionStatus(result === true ? "connected" : "error");
+        if (result !== true) {
+          setConnectionStatus("error");
+          console.error("Fallo de conexión inicial:", result);
+          return;
+        }
         
-        // Check if any profiles exist with fallback
-        let count = 0;
-        const { count: countProfiles, error: errorProfiles } = await supabase
+        setConnectionStatus("connected");
+        
+        // Check if any profiles exist
+        const { count, error } = await supabase
           .from("profiles")
           .select("*", { count: 'exact', head: true });
           
-        if (errorProfiles) {
-          const { count: countPerfiles } = await supabase
-            .from("perfiles")
-            .select("*", { count: 'exact', head: true });
-          count = countPerfiles || 0;
-        } else {
-          count = countProfiles || 0;
+        if (error) {
+          console.error("Error al contar perfiles:", error.message);
+          // Don't switch mode if there's a DB error
+          return;
         }
           
         if (count === 0) {
