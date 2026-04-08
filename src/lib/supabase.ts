@@ -22,14 +22,22 @@ export const supabase = createClient(
 
 export const checkSupabaseConnection = async () => {
   try {
-    // Try a very simple query
+    // 1. Check if we can even reach the Auth service
+    const { data: authHealth, error: authError } = await supabase.auth.getSession();
+    if (authError) {
+      console.warn('Auth service health check failed:', authError.message);
+    }
+
+    // 2. Try a very simple query to a system table if possible, or just the profiles table
+    // We use a very limited select to minimize data transfer
     const { error: errorProfiles } = await supabase.from('profiles').select('id').limit(1);
     
     if (errorProfiles) {
+      const msg = errorProfiles.message.toLowerCase();
       console.warn('Aviso en tabla "profiles":', errorProfiles.message);
       
       // If it's a schema error, it's a Supabase Cache issue
-      if (errorProfiles.message.includes('schema') || errorProfiles.message.includes('cache')) {
+      if (msg.includes('schema') || msg.includes('cache') || msg.includes('querying schema')) {
         return { 
           error: 'Error de Esquema en Supabase (PostgREST Cache)',
           details: 'La base de datos ha cambiado pero el servicio de API no se ha enterado. Por favor, ve al SQL Editor de Supabase y ejecuta: NOTIFY pgrst, "reload schema";',
@@ -38,22 +46,27 @@ export const checkSupabaseConnection = async () => {
       }
       
       // Check if it's a "relation does not exist" error
-      if (errorProfiles.message.includes('relation') && errorProfiles.message.includes('does not exist')) {
+      if (msg.includes('relation') && msg.includes('does not exist')) {
         return {
           error: 'Error de Estructura: Tabla "profiles" no encontrada',
-          details: 'Parece que la tabla de perfiles no existe. Por favor, ejecuta el script de creación de tablas en el SQL Editor de Supabase.',
+          details: 'Parece que la tabla de perfiles no existe o no tienes permisos. Por favor, ejecuta el script de creación de tablas (schema.sql) en el SQL Editor de Supabase.',
           isSchemaError: true
         };
       }
 
-      // Try fallback
-      const { error: errorPerfiles } = await supabase.from('perfiles').select('id').limit(1);
-      if (errorPerfiles) {
-        return { error: errorPerfiles.message };
+      // Check for permission issues
+      if (msg.includes('permission denied') || msg.includes('insufficient permissions')) {
+        return {
+          error: 'Error de Permisos',
+          details: 'El usuario anónimo no tiene permisos para leer la tabla "profiles". Ejecuta: GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated; en el SQL Editor.',
+          isSchemaError: true
+        };
       }
+
+      return { error: errorProfiles.message };
     }
     return true;
   } catch (err: any) {
-    return { error: err.message || 'Error de conexión' };
+    return { error: err.message || 'Error de conexión desconocido' };
   }
 };

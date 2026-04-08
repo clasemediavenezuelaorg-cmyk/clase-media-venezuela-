@@ -82,6 +82,12 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              name: name.trim(),
+              phone: cleanPhone
+            }
+          }
         });
 
         if (authError) {
@@ -92,30 +98,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
           throw authError;
         }
 
-        if (authData.user) {
-          console.log("Usuario creado en Auth. Creando perfil...");
-          // Check if this is the first user
-          const { count } = await supabase
-            .from("profiles")
-            .select("*", { count: 'exact', head: true });
-
-          const isFirstUser = count === 0;
-          const isSuperAdmin = isFirstUser || cleanPhone === "cmv-001";
-
-          // Create profile
-          const { error: profileError } = await supabase.from("profiles").insert({
-            id: authData.user.id,
-            name: name.trim(),
-            phone: cleanPhone,
-            role: isSuperAdmin ? "super_admin" : "user",
-          });
-
-          if (profileError) {
-            console.error("Error al crear perfil en base de datos:", profileError);
-            throw profileError;
-          }
-          console.log("Perfil creado exitosamente con rol:", isSuperAdmin ? "super_admin" : "user");
-        }
+        console.log("Usuario creado en Auth. El perfil se creará automáticamente vía Trigger.");
       } else {
         console.log("Intentando entrar con:", email);
         const { error } = await supabase.auth.signInWithPassword({
@@ -158,9 +141,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
       console.error("Auth error:", err);
       let errorMessage = err.message || "Error en la autenticación";
       
-      if (errorMessage.includes("schema") || errorMessage.includes("cache")) {
+      const msg = errorMessage.toLowerCase();
+      
+      if (msg.includes("schema") || msg.includes("cache") || msg.includes("querying schema")) {
         errorMessage = "🔄 ERROR DE ESQUEMA: Supabase no reconoce las tablas. Por favor, ve al SQL Editor de Supabase y ejecuta: NOTIFY pgrst, 'reload schema'; para refrescar la base de datos.";
-      } else if (errorMessage.includes("Invalid login credentials")) {
+      } else if (msg.includes("invalid login credentials")) {
         errorMessage = "❌ ACCESO DENEGADO: El usuario o la clave son incorrectos. Si acabas de conectar esta base de datos, DEBES usar la pestaña 'REGISTRARME' primero para crear tu cuenta. 🔑🛡️";
       } else if (errorMessage.includes("Email not confirmed")) {
         errorMessage = "⚠️ ERROR DE CONFIGURACIÓN: El correo no ha sido confirmado. Por favor, ve a tu panel de Supabase (Authentication > Providers > Email) y DESACTIVA la opción 'Confirm Email' para permitir el acceso directo. 📧🚫";

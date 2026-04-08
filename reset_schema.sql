@@ -1,7 +1,16 @@
--- MASTER RESET SCRIPT FOR CLASE MEDIA VENEZUELA
--- This script drops everything and creates a fresh, clean structure.
+-- MASTER RESET SCRIPT FOR CLASE MEDIA VENEZUELA (V2 - ULTRA ROBUST)
+-- This script drops everything and creates a fresh, clean structure with automatic triggers.
+
+-- 0. PREPARE EXTENSIONS & PATHS
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- Fix potential search path issues that cause "Database error finding user"
+ALTER ROLE authenticator SET search_path TO cache, public, auth;
 
 -- 1. DROP EVERYTHING (Careful!)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
 DROP TABLE IF EXISTS app_settings CASCADE;
 DROP TABLE IF EXISTS plans CASCADE;
 DROP TABLE IF EXISTS assemblies CASCADE;
@@ -19,8 +28,8 @@ DROP TABLE IF EXISTS profiles CASCADE;
 
 -- Profiles (Linked to Auth)
 CREATE TABLE profiles (
-  id UUID PRIMARY KEY, -- This will match auth.users.id
-  name TEXT NOT NULL,
+  id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
+  name TEXT,
   phone TEXT,
   profession TEXT,
   skills TEXT[] DEFAULT '{}',
@@ -29,11 +38,35 @@ CREATE TABLE profiles (
   is_verified BOOLEAN DEFAULT FALSE,
   avatar_url TEXT,
   role TEXT DEFAULT 'user', -- 'user', 'admin', 'super_admin'
-  department TEXT, -- 'economy', 'education', etc.
+  department TEXT,
   bio TEXT,
   location TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Function to handle new user registration automatically
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, name, phone, role)
+  VALUES (
+    new.id, 
+    COALESCE(new.raw_user_meta_data->>'name', 'Usuario Nuevo'),
+    new.raw_user_meta_data->>'phone',
+    CASE 
+      WHEN (SELECT COUNT(*) FROM public.profiles) = 0 THEN 'super_admin'
+      WHEN new.email LIKE 'cmv-001%' THEN 'super_admin'
+      ELSE 'user'
+    END
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to call the function on every signup
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Citizen Reports (Incidencias)
 CREATE TABLE citizen_reports (
@@ -154,5 +187,5 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
 
--- REFRESH CACHE
+-- REFRESH CACHE (Fixes "Database error querying schema")
 NOTIFY pgrst, 'reload schema';
